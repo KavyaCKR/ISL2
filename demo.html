@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISL Gesture Recognition - Live Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .demo-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #1f2937;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .model-info {
+            background: #f3f4f6;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            font-size: 13px;
+        }
+
+        .info-item {
+            color: #374151;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .demo-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 15px;
+        }
+
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f9fafb;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #ede9fe;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #ede9fe;
+        }
+
+        .upload-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: #374151;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .upload-subtext {
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        #imageInput {
+            display: none;
+        }
+
+        .image-preview {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .preview-wrapper {
+            position: relative;
+            background: #f3f4f6;
+            border-radius: 12px;
+            overflow: hidden;
+            max-height: 300px;
+        }
+
+        #previewImage {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-predict {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-predict:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-clear {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-clear:hover {
+            background: #d1d5db;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .result-gesture {
+            font-size: 32px;
+            font-weight: 800;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .result-confidence {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .confidence-bar-wrapper {
+            margin: 20px 0;
+        }
+
+        .confidence-bar {
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 8px;
+        }
+
+        .confidence-fill {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .predictions-list {
+            space: 10px;
+        }
+
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .prediction-class {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .prediction-score {
+            background: #f3f4f6;
+            padding: 4px 10px;
+            border-radius: 6px;
+            color: #374151;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .processing-time {
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .api-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .api-status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        @media (max-width: 640px) {
+            .demo-container {
+                padding: 25px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .model-info {
+                grid-template-columns: 1fr;
+            }
+
+            .upload-area {
+                padding: 20px;
+            }
+
+            .result-gesture {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="api-status" id="apiStatus">Connecting to API...</div>
+
+    <div class="demo-container">
+        <div class="header">
+            <h1>🤟 ISL Gesture Recognition</h1>
+            <p>Upload an image to recognize Indian Sign Language gestures in real-time</p>
+        </div>
+
+        <div class="model-info">
+            <div class="info-item">
+                <div class="info-label">Model Architecture</div>
+                <div>MobileNetV2 Transfer Learning</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Test Accuracy</div>
+                <div>98.91%</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Gesture Classes</div>
+                <div>30 ISL Gestures</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Input Size</div>
+                <div>224×224 pixels</div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="demo-section">
+            <div class="section-title">Upload Image</div>
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📸</div>
+                <div class="upload-text">Click to upload or drag & drop</div>
+                <div class="upload-subtext">PNG, JPG, GIF up to 10MB</div>
+            </div>
+            <input type="file" id="imageInput" accept="image/*">
+        </div>
+
+        <!-- Image Preview -->
+        <div class="image-preview" id="imagePreview">
+            <img id="previewImage" src="" alt="Preview">
+            <div class="button-group">
+                <button class="btn-predict" id="predictBtn">🚀 Predict Gesture</button>
+                <button class="btn-clear" id="clearBtn">Clear</button>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error" id="errorMsg"></div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loadingIndicator">
+            <div class="spinner"></div>
+            <div>Analyzing gesture...</div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results" id="results">
+            <div class="result-header">
+                <div class="result-gesture" id="resultGesture">-</div>
+                <div class="result-confidence">
+                    <span id="confidenceText">Confidence: -</span>
+                </div>
+            </div>
+
+            <div class="confidence-bar-wrapper">
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="section-title">Top 5 Predictions</div>
+            <div class="predictions-list" id="predictionsList"></div>
+
+            <div class="processing-time" id="processingTime"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImage = document.getElementById('previewImage');
+        const predictBtn = document.getElementById('predictBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const results = document.getElementById('results');
+        const errorMsg = document.getElementById('errorMsg');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const apiStatus = document.getElementById('apiStatus');
+
+        let selectedFile = null;
+
+        // Check API connection on load
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    apiStatus.textContent = '✓ API Connected';
+                    apiStatus.classList.remove('error');
+                } else {
+                    updateAPIStatus(false);
+                }
+            } catch (error) {
+                updateAPIStatus(false);
+            }
+        }
+
+        function updateAPIStatus(isConnected) {
+            if (isConnected) {
+                apiStatus.textContent = '✓ API Connected';
+                apiStatus.classList.remove('error');
+            } else {
+                apiStatus.textContent = '✗ API Disconnected';
+                apiStatus.classList.add('error');
+                showError('Cannot connect to prediction API. Make sure the Flask server is running.');
+            }
+        }
+
+        // Upload area interaction
+        uploadArea.addEventListener('click', () => imageInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelection(files[0]);
+            }
+        });
+
+        imageInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelection(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelection(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please upload an image file');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showError('File size must be less than 10MB');
+                return;
+            }
+
+            selectedFile = file;
+            clearError();
+
+            // Display preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                imagePreview.style.display = 'block';
+                uploadArea.style.display = 'none';
+                results.classList.remove('show');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        predictBtn.addEventListener('click', async () => {
+            if (!selectedFile) {
+                showError('Please select an image first');
+                return;
+            }
+
+            await makePrediction();
+        });
+
+        clearBtn.addEventListener('click', () => {
+            selectedFile = null;
+            imageInput.value = '';
+            imagePreview.style.display = 'none';
+            uploadArea.style.display = 'block';
+            results.classList.remove('show');
+            clearError();
+        });
+
+        async function makePrediction() {
+            loadingIndicator.classList.add('show');
+            predictBtn.disabled = true;
+            clearError();
+
+            try {
+                // Convert image to base64
+                const base64 = await fileToBase64(selectedFile);
+
+                // Make API request
+                const response = await fetch(`${API_URL}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ image: base64.split(',')[1] })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'Prediction failed');
+                }
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+                updateAPIStatus(false);
+            } finally {
+                loadingIndicator.classList.remove('show');
+                predictBtn.disabled = false;
+            }
+        }
+
+        function displayResults(data) {
+            const confidence = (data.confidence * 100).toFixed(1);
+            const gesture = data.top_1;
+
+            // Update result
+            document.getElementById('resultGesture').textContent = gesture;
+            document.getElementById('confidenceText').textContent = `Confidence: ${confidence}%`;
+            document.getElementById('confidenceFill').style.width = `${confidence}%`;
+
+            // Display top predictions
+            const predictionsList = document.getElementById('predictionsList');
+            predictionsList.innerHTML = '';
+
+            data.top_predictions.forEach((pred, index) => {
+                const item = document.createElement('div');
+                item.className = 'prediction-item';
+                const percentage = (pred.confidence * 100).toFixed(1);
+                item.innerHTML = `
+                    <span class="prediction-class">${index + 1}. ${pred.class}</span>
+                    <span class="prediction-score">${percentage}%</span>
+                `;
+                predictionsList.appendChild(item);
+            });
+
+            // Processing time
+            document.getElementById('processingTime').textContent = 
+                `Processed in ${data.processing_time_ms.toFixed(2)}ms`;
+
+            // Show results
+            results.classList.add('show');
+        }
+
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorMsg.classList.add('show');
+        }
+
+        function clearError() {
+            errorMsg.classList.remove('show');
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Check API on page load
+        window.addEventListener('load', checkAPIStatus);
+    </script>
+</body>
+</html>
